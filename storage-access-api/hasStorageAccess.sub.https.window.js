@@ -1,14 +1,17 @@
 // META: script=helpers.js
+// META: script=/resources/testdriver.js
+// META: script=/resources/testdriver-vendor.js
 'use strict';
 
 const {testPrefix, topLevelDocument} = processQueryParams();
 
 // Common tests to run in all frames.
-test(() => {
+promise_test(async () => {
   assert_not_equals(document.hasStorageAccess, undefined);
 }, "[" + testPrefix + "] document.hasStorageAccess() should exist on the document interface");
 
 promise_test(async () => {
+  await MaybeSetStorageAccess("*", "*", "blocked");
   const hasAccess = await document.hasStorageAccess();
   if (topLevelDocument || testPrefix.includes('same-origin')) {
     assert_true(hasAccess, "Access should be granted in top-level frame or iframe that is in first-party context by default.");
