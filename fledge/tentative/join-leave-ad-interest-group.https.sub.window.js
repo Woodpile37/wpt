@@ -1,6 +1,7 @@
 // META: script=/resources/testdriver.js
 // META: script=/common/utils.js
 // META: script=resources/fledge-util.js
+// META: timeout=long
 
 "use strict;"
 
@@ -166,58 +167,58 @@ const SIMPLE_JOIN_LEAVE_TEST_CASES = [
                      enableBiddingSignalsPrioritization: false}
   },
 
-  // "biddingLogicUrl" tests
+  // "biddingLogicURL" tests
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingLogicUrl: null }
+                     biddingLogicURL: null }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingLogicUrl: 'https://{{hosts[][www]}}/foo.js' }
+                     biddingLogicURL: 'https://{{hosts[][www]}}/foo.js' }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingLogicUrl: 'data:text/javascript,Foo' }
+                     biddingLogicURL: 'data:text/javascript,Foo' }
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingLogicUrl: `${window.location.origin}/foo.js`}
+                     biddingLogicURL: `${window.location.origin}/foo.js`}
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingLogicUrl: 'relative/path' }
+                     biddingLogicURL: 'relative/path' }
   },
 
-  // "biddingWasmHelperUrl" tests
+  // "biddingWasmHelperURL" tests
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingWasmHelperUrl: null }
+                     biddingWasmHelperURL: null }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingWasmHelperUrl: 'https://{{hosts[][www]}}/foo.js' }
+                     biddingWasmHelperURL: 'https://{{hosts[][www]}}/foo.js' }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingWasmHelperUrl: 'data:application/wasm,Foo' }
+                     biddingWasmHelperURL: 'data:application/wasm,Foo' }
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingWasmHelperUrl: `${window.location.origin}/foo.js`}
+                     biddingWasmHelperURL: `${window.location.origin}/foo.js`}
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     biddingWasmHelperUrl: 'relative/path' }
+                     biddingWasmHelperURL: 'relative/path' }
   },
 
   // "dailyUpdateUrl" tests
@@ -264,31 +265,31 @@ const SIMPLE_JOIN_LEAVE_TEST_CASES = [
                      executionMode: 'unknownValuesAreValid' }
   },
 
-  // "trustedBiddingSignalsUrl" tests
+  // "trustedBiddingSignalsURL" tests
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     trustedBiddingSignalsUrl: null }
+                     trustedBiddingSignalsURL: null }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     trustedBiddingSignalsUrl: 'https://{{hosts[][www]}}/foo.js' }
+                     trustedBiddingSignalsURL: 'https://{{hosts[][www]}}/foo.js' }
   },
   { expectJoinSucces: false,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     trustedBiddingSignalsUrl: 'data:application/json,{}' }
+                     trustedBiddingSignalsURL: 'data:application/json,{}' }
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     trustedBiddingSignalsUrl: `${window.location.origin}/foo.js`}
+                     trustedBiddingSignalsURL: `${window.location.origin}/foo.js`}
   },
   { expectJoinSucces: true,
     expectLeaveSucces: true,
     interestGroup: { ...BASE_INTEREST_GROUP,
-                     trustedBiddingSignalsUrl: 'relative/path' }
+                     trustedBiddingSignalsURL: 'relative/path' }
   },
 
   // "trustedBiddingSignalsKeys" tests
@@ -461,9 +462,36 @@ const SIMPLE_JOIN_LEAVE_TEST_CASES = [
                      matter: 'at',
                      all: [3,4,5] }
   },
+
+  // Interest group dictionaries must be less than 1 MB (1048576 bytes), so
+  // test that here by using a large name on an otherwise valid interest group
+  // dictionary. The first case is the largest name value that still results in
+  // a valid dictionary, whereas the second test case produces a dictionary
+  // that's one byte too large.
+  { expectJoinSucces: true,
+    expectLeaveSucces: true,
+    interestGroup: { ...BASE_INTEREST_GROUP,
+      name: 'a'.repeat(1048524)
+    },
+    testCaseName: "Largest possible interest group dictionary",
+  },
+  { expectJoinSucces: false,
+    expectLeaveSucces: true,
+    interestGroup: { ...BASE_INTEREST_GROUP,
+      name: 'a'.repeat(1048525)
+    },
+    testCaseName: "Oversized interest group dictionary",
+  },
 ];
 
 for (testCase of SIMPLE_JOIN_LEAVE_TEST_CASES) {
+  var test_name = 'Join and leave interest group: ';
+  if ('testCaseName' in testCase) {
+    test_name += testCase.testCaseName;
+  } else {
+    test_name += JSON.stringify(testCase);
+  }
+
   promise_test((async (testCase) => {
     const INTEREST_GROUP_LIFETIME_SECS = 1;
 
@@ -482,8 +510,7 @@ for (testCase of SIMPLE_JOIN_LEAVE_TEST_CASES) {
       assert_true(joinExceptionThrown, 'Exception not thrown on join.');
     }
 
-    let leave_promise = navigator.leaveAdInterestGroup(testCase.interestGroup,
-                                                       INTEREST_GROUP_LIFETIME_SECS);
+    let leave_promise = navigator.leaveAdInterestGroup(testCase.interestGroup);
     assert_true(leave_promise instanceof Promise, "leave should return a promise");
     if (testCase.expectLeaveSucces) {
       assert_equals(await leave_promise, undefined);
@@ -496,7 +523,7 @@ for (testCase of SIMPLE_JOIN_LEAVE_TEST_CASES) {
       }
       assert_true(leaveExceptionThrown, 'Exception not thrown on leave.');
     }
-  }).bind(undefined, testCase), 'Join and leave interest group: ' + JSON.stringify(testCase));
+  }).bind(undefined, testCase), test_name);
 }
 
 promise_test(async test => {
@@ -504,7 +531,7 @@ promise_test(async test => {
 
   // Joining an interest group without a bidding script and run an auction.
   // There should be no winner.
-  await joinInterestGroup(test, uuid, { biddingLogicUrl: null });
+  await joinInterestGroup(test, uuid, { biddingLogicURL: null });
   assert_equals(null, await runBasicFledgeAuction(test, uuid),
                 'Auction unexpectedly had a winner');
 
@@ -512,13 +539,14 @@ promise_test(async test => {
   // the previously joined interest group, and re-run the auction. There should
   // be a winner this time.
   await joinInterestGroup(test, uuid);
-  let url = await runBasicFledgeAuction(test, uuid);
-  assert_true('string' === typeof url,
-              'Wrong value type returned from auction: ' + typeof url);
+  let config = await runBasicFledgeAuction(test, uuid);
+  assert_true(config instanceof FencedFrameConfig,
+              'Wrong value type returned from auction: ' +
+              config.constructor.name);
 
   // Re-join the first interest group, and re-run the auction. The interest
   // group should be overwritten again, and there should be no winner.
-  await joinInterestGroup(test, uuid, { biddingLogicUrl: null });
+  await joinInterestGroup(test, uuid, { biddingLogicURL: null });
   assert_equals(null, await runBasicFledgeAuction(test, uuid),
                 'Auction unexpectedly had a winner');
 }, 'Join same interest group overwrites old matching group.');
@@ -528,9 +556,10 @@ promise_test(async test => {
 
   // Join an interest group, run an auction to make sure it was joined.
   await joinInterestGroup(test, uuid);
-  let url = await runBasicFledgeAuction(test, uuid);
-  assert_true('string' === typeof url,
-              'Wrong value type returned from auction: ' + typeof url);
+  let config = await runBasicFledgeAuction(test, uuid);
+  assert_true(config instanceof FencedFrameConfig,
+              'Wrong value type returned from auction: ' +
+              config.constructor.name);
 
   // Leave the interest group, re-run the auction. There should be no winner.
   await leaveInterestGroup();
@@ -542,3 +571,59 @@ promise_test(async test => {
   // This should not throw.
   await leaveInterestGroup({ name: 'Never join group' });
 }, 'Leave an interest group that was never joined.');
+
+///////////////////////////////////////////////////////////////////////////////
+// Expiration tests
+///////////////////////////////////////////////////////////////////////////////
+
+promise_test(async test => {
+  const uuid = generateUuid(test);
+
+  // Joins the default interest group, with a 0.2 second duration.
+  await joinInterestGroup(test, uuid, {}, 0.2);
+
+  // Keep on running auctions until interest group duration expires.
+  // Unfortunately, there's no duration that's guaranteed to be long enough to
+  // be be able to win an auction once, but short enough to prevent this test
+  // from running too long, so can't check the interest group won at least one
+  // auction.
+  while (await runBasicFledgeAuction(test, uuid) !== null);
+}, 'Interest group duration.');
+
+promise_test(async test => {
+  const uuid = generateUuid(test);
+
+  // Join interest group with a duration of -600. The interest group should
+  // immediately expire, and not be allowed to participate in auctions.
+  await joinInterestGroup(test, uuid, {}, -600);
+  assert_true(await runBasicFledgeAuction(test, uuid) === null);
+}, 'Interest group duration of -600.');
+
+promise_test(async test => {
+  const uuid = generateUuid(test);
+
+  // Join a long-lived interest group.
+  await joinInterestGroup(test, uuid, {}, 600);
+
+  // Make sure interest group with a non-default timeout was joined.
+  assert_true(await runBasicFledgeAuction(test, uuid) !== null);
+
+  // Re-join interest group with a duration value of 0.2 seconds.
+  await joinInterestGroup(test, uuid, {}, 0.2);
+
+  // Keep on running auctions until interest group expires.
+  while (await runBasicFledgeAuction(test, uuid) !== null);
+}, 'Interest group test with overwritten duration.');
+
+promise_test(async test => {
+  const uuid = generateUuid(test);
+
+  // Join a long-lived interest group.
+  await joinInterestGroup(test, uuid, {}, 600);
+
+  // Re-join interest group with a duration value of 0.2 seconds. The new
+  // duration should take precedence, and the interest group should immediately
+  // expire.
+  await joinInterestGroup(test, uuid, {}, -600);
+  assert_true(await runBasicFledgeAuction(test, uuid) === null);
+}, 'Interest group test with overwritten duration of -600.');
