@@ -93,7 +93,8 @@ class TestEnvironment:
     websockets servers"""
     def __init__(self, test_paths, testharness_timeout_multipler,
                  pause_after_test, debug_test, debug_info, options, ssl_config, env_extras,
-                 enable_webtransport=False, mojojs_path=None, inject_script=None):
+                 enable_webtransport=False, mojojs_path=None, inject_script=None,
+                 suppress_handler_traceback=None):
 
         self.test_paths = test_paths
         self.server = None
@@ -117,6 +118,7 @@ class TestEnvironment:
         self.enable_webtransport = enable_webtransport
         self.mojojs_path = mojojs_path
         self.inject_script = inject_script
+        self.suppress_handler_traceback = suppress_handler_traceback
 
     def __enter__(self):
         server_log_handler = self.server_logging_ctx.__enter__()
@@ -213,6 +215,9 @@ class TestEnvironment:
         config.doc_root = serve_path(self.test_paths)
         config.inject_script = self.inject_script
 
+        if self.suppress_handler_traceback is not None:
+            config.logging["suppress_handler_traceback"] = self.suppress_handler_traceback
+
         return config
 
     def get_routes(self):
@@ -306,14 +311,22 @@ class TestEnvironment:
         return failed, pending
 
 
-def wait_for_service(logger, host, port, timeout=60):
+def wait_for_service(logger, host, port, timeout=60, server_process=None):
     """Waits until network service given as a tuple of (host, port) becomes
-    available or the `timeout` duration is reached, at which point
-    ``socket.error`` is raised."""
+    available, `timeout` duration is reached, or the `server_process` exits at
+    which point ``socket.error`` is raised."""
     addr = (host, port)
     logger.debug(f"Trying to connect to {host}:{port}")
     end = time.time() + timeout
     while end > time.time():
+        if server_process is not None and server_process.poll() is not None:
+            returncode = server_process.poll()
+            logger.debug(
+                f"Server process {server_process.pid} exited with "
+                f"{returncode}, giving up trying to connect"
+            )
+            break
+
         so = socket.socket()
         try:
             so.connect(addr)

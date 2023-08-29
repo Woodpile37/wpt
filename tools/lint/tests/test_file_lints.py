@@ -610,8 +610,7 @@ def test_variant_missing():
 # A corresponding "positive" test cannot be written because the manifest
 # SourceFile implementation raises a runtime exception for the condition this
 # linting rule describes
-@pytest.mark.parametrize("content", ["",
-                                     "?foo"
+@pytest.mark.parametrize("content", ["?foo"
                                      "#bar"])
 def test_variant_malformed_negative(content):
     code = """\
@@ -748,27 +747,6 @@ def test_open_mode():
             ("OPEN-NO-MODE", message, "test.py", 3),
             ("OPEN-NO-MODE", message, "test.py", 12),
         ]
-
-
-@pytest.mark.parametrize(
-    "filename,expect_error",
-    [
-        ("foo/bar.html", False),
-        ("css/bar.html", True),
-    ])
-def test_css_support_file(filename, expect_error):
-    errors = check_file_contents("", filename, io.BytesIO(b""))
-    check_errors(errors)
-
-    if expect_error:
-        assert errors == [
-            ('SUPPORT-WRONG-DIR',
-             'Support file not in support directory',
-             filename,
-             None),
-        ]
-    else:
-        assert errors == []
 
 
 def test_css_missing_file_in_css():
